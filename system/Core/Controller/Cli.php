@@ -4,7 +4,7 @@
  * Cli 控制器抽象父类
  *
  * @author JiangJian <silverd@sohu.com>
- * $Id: Cli.php 9876 2014-03-15 16:29:06Z jiangjian $
+ * $Id: Cli.php 12347 2014-12-10 03:39:27Z jiangjian $
  */
 
 abstract class Core_Controller_Cli extends Core_Controller_Abstract
@@ -22,6 +22,10 @@ abstract class Core_Controller_Cli extends Core_Controller_Abstract
 
         set_time_limit(0);
         ini_set('memory_limit', '1024M');
+
+        // 不输出SQL调试信息
+        // 防止本地浏览器模式运行时header超大
+        Com_DB::enableLogging(false);
 
         if (! $this->_request->isCli() && ! isEnv('devel')) {
             // 开发环境下允许用URL访问执行
