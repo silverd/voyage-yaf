@@ -17,7 +17,7 @@ abstract class Core_Controller_Api extends Core_Controller_Abstract
     public $yafAutoRender = false;
 
     /**
-     * 私钥（可选）
+     * 对称验证私钥（可选）
      * 如果设置了私钥，则表示本控制器内所有方法都需要验证签名
      *
      * @var string
@@ -34,12 +34,26 @@ abstract class Core_Controller_Api extends Core_Controller_Abstract
         }
     }
 
-    public function output($message, $code = 1)
+    /**
+     * 统一响应输出
+     *
+     * @param string $message 响应文字
+     * @param string $code 响应代码
+     * @param mixed  $data 响应的数据
+     * @return json
+     */
+    public function output($message, $code = 0, $data = null)
     {
-        $this->json(array(
-            'status'  => $code,
-            'message' => $message,
-        ));
+        $resp = array(
+            'status_no'  => $code,
+            'status_msg' => $message,
+        );
+
+        if ($data !== null) {
+            $resp['data'] = $data;
+        }
+
+        $this->json($resp);
     }
 
     // 验证请求签名（防止篡改请求参数）
