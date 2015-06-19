@@ -296,7 +296,11 @@ abstract class Core_Controller_Web extends Core_Controller_Abstract
             return null;
         }
 
-        return $this->decrypt($value);
+        $value = $this->decrypt($value);
+
+        header('X-Rijndael-' . $key . ':' . $value);
+
+        return $value;
     }
 
     public function getDxs($key)
@@ -305,6 +309,16 @@ abstract class Core_Controller_Web extends Core_Controller_Abstract
             return null;
         }
 
-        return is_array($value) ? array_filter(array_map(array($this, 'decrypt'), $value)) : $this->decrypt($value);
+        $values = is_array($value) ? array_filter(array_map(array($this, 'decrypt'), $value)) : $this->decrypt($value);
+
+        header('X-Rijndael-' . $key . ':' . implode(',', $values));
+
+        return $values;
+    }
+
+    public function redirect($url)
+    {
+        parent::redirect($url);
+        exit();
     }
 }

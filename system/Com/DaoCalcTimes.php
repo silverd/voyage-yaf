@@ -31,9 +31,9 @@ class Com_DaoCalcTimes extends Com_Dao
         return $row;
     }
 
-    public function incrByPk($pk, $field, $step = 1)
+    public function incrByPk($pk, $field, $step = 1, $touch = false)
     {
-        if (! $result = parent::incrByPk($pk, $field, $step)) {
+        if (! $result = parent::incrByPk($pk, $field, $step, $touch)) {
             return $result;
         }
 

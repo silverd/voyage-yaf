@@ -37,9 +37,10 @@ class Com_Cache_Redis
      * @param string $group
      * @throws Core_Exception_Fatal
      */
-    public function __construct($group = 'global')
+    public function __construct($group = 'default')
     {
         $config = Core_Config::loadEnv('redis');
+
         if (! isset($config[$group])) {
             throw new Core_Exception_Fatal('没有找到 ' . $group . ' 分组的 Redis 配置信息，请检查 redis.conf.php');
         }

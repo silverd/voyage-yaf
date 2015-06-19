@@ -96,6 +96,16 @@ class Helper_String
         return $strcut . $dot;
     }
 
+    public static function cut2($string, $length, $dot = ' ...', $charset = 'UTF-8')
+    {
+        if (mb_strlen($string, 'UTF-8') > $length) {
+            $string = mb_substr($string, 0, $length, $charset);
+            return $string . $dot;
+        }
+
+        return $string;
+    }
+
     /**
      * 遍历处理数组
      *
@@ -338,5 +348,118 @@ class Helper_String
         }
 
         return $cutWord;
+    }
+
+    /**
+     * 去除emoji表情符号
+     *
+     * @param string $text
+     * @return string
+     */
+    public static function removeEmoji($text)
+    {
+        return preg_replace('/([0-9|#][\x{20E3}])|[\x{00ae}|\x{00a9}|\x{203C}|\x{2047}|\x{2048}|\x{2049}|\x{3030}|\x{303D}|\x{2139}|\x{2122}|\x{3297}|\x{3299}][\x{FE00}-\x{FEFF}]?|[\x{2190}-\x{21FF}][\x{FE00}-\x{FEFF}]?|[\x{2300}-\x{23FF}][\x{FE00}-\x{FEFF}]?|[\x{2460}-\x{24FF}][\x{FE00}-\x{FEFF}]?|[\x{25A0}-\x{25FF}][\x{FE00}-\x{FEFF}]?|[\x{2600}-\x{27BF}][\x{FE00}-\x{FEFF}]?|[\x{2900}-\x{297F}][\x{FE00}-\x{FEFF}]?|[\x{2B00}-\x{2BF0}][\x{FE00}-\x{FEFF}]?|[\x{1F000}-\x{1F6FF}][\x{FE00}-\x{FEFF}]?/u', '', $text);
+    }
+
+    // 阿拉伯数字转中文表述，如101转成一百零一
+    public static function num2cn($number)
+    {
+        $number   = intval($number);
+        $capnum   = ['零', '一', '二', '三', '四', '五', '六', '七', '八', '九'];
+        $capdigit = ['', '十', '百', '千', '万', '十万', '百万', '千万', '亿', '十亿', '百亿', '千亿'];
+
+        $datas = str_split($number);
+        $count = count($datas);
+        for($i = 0; $i < $count; $i ++) {
+            $d = $capnum[$datas[$i]];
+            $arr[] = $d != '零' ? $d . $capdigit[$count - $i - 1] : $d;
+        }
+
+        $cncap = implode('', $arr);
+        $cncap = preg_replace('/(零)+/', '0', $cncap); // 合并连续“零”
+        $cncap = trim($cncap, '0');
+        $cncap = str_replace('0', '零', $cncap); // 合并连续“零”
+        $cncap == '一十' && $cncap = '十';
+        $cncap == '' && $cncap = '零';
+
+        return $cncap;
+    }
+
+    public static function xmlToArray($xmlString)
+    {
+        return json_decode(json_encode(simplexml_load_string($xmlString, 'SimpleXMLElement', LIBXML_NOCDATA)), true);
+    }
+
+    public static function arrayToXml(array $data)
+    {
+        $xml = new SimpleXMLElement('<xml></xml>');
+        self::__dataToXml($xml, $data);
+
+        return $xml->asXML();
+    }
+
+    private static function __dataToXml($xml, array $data, $item = 'item')
+    {
+        foreach ($data as $key => $value) {
+            is_numeric($key) && ($key = $item);
+            if (is_array($value) || is_object($value)) {
+                $child = $xml->addChild($key);
+                self::__dataToXml($child, $value, $item);
+            } else {
+                if (is_numeric($value)) {
+                    $child = $xml->addChild($key, $value);
+                } else {
+                    $child = $xml->addChild($key);
+                    $node = dom_import_simplexml($child);
+                    $node->appendChild($node->ownerDocument->createCDATASection($value));
+                }
+            }
+        }
+    }
+
+    public static function arrayToXml2(array $array)
+    {
+        $xml = '<xml>';
+
+        foreach ($array as $key => $val) {
+            if (is_numeric($val)) {
+                $xml .= '<' . $key . '>' . $val . '</' . $key . '>';
+            } else
+                $xml .= '<' . $key . '><![CDATA[' . $val . ']]></' . $key . '>';
+        }
+
+        $xml .= '</xml>';
+
+        return $xml;
+    }
+
+    public static function urlSafeBase64Encode($data)
+    {
+        $find = array('+', '/');
+        $replace = array('-', '_');
+        return str_replace($find, $replace, base64_encode($data));
+    }
+
+    // 是否二进制图片流
+    public static function isImgStream($string)
+    {
+        // 借用GD库来判断
+        if (function_exists('imagecreatefromstring')) {
+            // TODO
+            return @imagecreatefromstring($string) ? true : false;
+        }
+        // 如果没装GD库
+        else {
+            switch(bin2hex(substr($string, 0, 2))) {
+                case 'ffd8' :
+                    return 'ffd9' === bin2hex(substr($string, -2));
+                case '8950' :
+                    return '6082' === bin2hex(substr($string, -2));
+                case '4749' :
+                    return '003b' === bin2hex(substr($string, -2));
+                default :
+                    return false;
+            }
+        }
     }
 }

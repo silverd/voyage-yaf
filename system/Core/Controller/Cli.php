@@ -33,14 +33,14 @@ abstract class Core_Controller_Cli extends Core_Controller_Abstract
         }
     }
 
-    public function log($method, $string)
+    public function log($method, $content)
     {
-        if (is_array($string)) {
-            $string = var_export($string, true);
+        if (is_array($content)) {
+            $content = var_export($content, true);
         }
 
         $fileName = str_replace(array('::', 'Controller_', 'Action'), array('-', '', ''), $method);
 
-        Com_Log::write('cronlog-' . $fileName, $string);
+        return Com_Logger_File::info('cli-log-' . $fileName, $content);
     }
 }

@@ -31,11 +31,11 @@ class Core_Debug
 
             // SQL Info
             $table = array();
-            $table[] = array('Elapse', 'Host', 'Database', 'SQL', 'Params', 'RealSQL');
+            $table[] = array('Elapse', 'Host', 'Database', 'SQL');
             foreach ($GLOBALS['_SQLs'] as $v) {
                 $elapsed = round(($v['time'] * 1000), 3);   // SQL 耗时
                 if ($v['params']) {
-                    $table[] = array($elapsed . 'ms', $v['host'], $v['dbName'], $v['sql'], $v['params'], $v['realSql']);
+                    $table[] = array($elapsed . 'ms', $v['host'], $v['dbName'], $v['realSql']);
                 } else {
                     $table[] = array($elapsed . 'ms', $v['host'], $v['dbName'], $v['sql']);
                 }

@@ -1,5 +1,12 @@
 <?php
 
+/**
+ * 测试模块抽象父类
+ *
+ * @author JiangJian <silverd@sohu.com>
+ * $Id: Error.php 9716 2015-05-31 12:12:41Z jiangjian $
+ */
+
 abstract class Core_Controller_Test extends Core_Controller_Web
 {
     protected $_url;

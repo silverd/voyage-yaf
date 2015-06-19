@@ -58,7 +58,7 @@ abstract class Core_Controller_Abstract extends Yaf_Controller_Abstract
 
     public function isAjax()
     {
-        return $this->_request->isXmlHttpRequest();
+        return $this->_request->isXmlHttpRequest() || $this->getBool('is_ajax');
     }
 
     public function getQuery($key = null, $default = null)

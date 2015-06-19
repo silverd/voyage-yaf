@@ -28,21 +28,59 @@ class Helper_Client
      */
     public static function getUserIp()
     {
-        if (isset($GLOBALS['__onlineip']) && ! empty($GLOBALS['__onlineip'])) {
-            return $GLOBALS['__onlineip'];
+        if (isset($GLOBALS['__CLIENT_IP']) && ! empty($GLOBALS['__CLIENT_IP'])) {
+            return $GLOBALS['__CLIENT_IP'];
         }
 
-        $ip = isset($_SERVER['REMOTE_ADDR']) ? $_SERVER['REMOTE_ADDR'] : '';
+        $ip = '';
 
-        if (isset($_SERVER['HTTP_CLIENT_IP'])) {
+        if (isset($_SERVER['HTTP_X_FORWARDED_FOR'])) {
+            // 多次反向代理后会有多个ip值，第一个ip才是真实ip
+            $ips = explode(',', str_ireplace('unknown', '', $_SERVER['HTTP_X_FORWARDED_FOR']));
+            $ip  = isset($ips[0]) ? trim($ips[0]) : '';
+        }
+        elseif (isset($_SERVER['HTTP_X_REAL_IP'])) {
+            $ip = $_SERVER['HTTP_X_REAL_IP'];
+        }
+        elseif (isset($_SERVER['HTTP_CLIENT_IP'])) {
             $ip = $_SERVER['HTTP_CLIENT_IP'];
-        } elseif (isset($_SERVER['HTTP_X_FORWARDED_FOR'])) {
-            $ip = $_SERVER['HTTP_X_FORWARDED_FOR'];
+        }
+        elseif (isset($_SERVER['REMOTE_ADDR'])) {
+            $ip = $_SERVER['REMOTE_ADDR'];
         }
 
-        $GLOBALS['__onlineip'] = $ip;
+        $GLOBALS['__CLIENT_IP'] = $ip;
 
-        return $ip ?: 'Unknown';
+        return $ip;
+    }
+
+    /**
+     * 获取服务端IP
+     *
+     * @access public
+     * @return string
+     */
+    public static function getServerIp()
+    {
+        if (isset($GLOBALS['__SERVER_IP']) && ! empty($GLOBALS['__SERVER_IP'])) {
+            return $GLOBALS['__SERVER_IP'];
+        }
+
+        $ip = '';
+
+        if (isset($_SERVER)) {
+            if (isset($_SERVER['SERVER_ADDR'])) {
+                $ip = $_SERVER['SERVER_ADDR'];
+            } elseif (isset($_SERVER['LOCAL_ADDR'])) {
+                $ip = $_SERVER['LOCAL_ADDR'];
+            }
+        } else {
+            $ip = getenv('SERVER_ADDR');
+        }
+
+        $GLOBALS['__SERVER_IP'] = $ip;
+
+        return $ip;
     }
 
     /**

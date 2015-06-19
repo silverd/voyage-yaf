@@ -33,7 +33,7 @@ class Helper_Api
             $params['sign'] = self::_buildSign($params, $secretKey);
         }
 
-        $result = Com_Http::sendRequest($url, $params, 'CURL-POST');
+        $result = Com_Http::request($url, $params, 'CURL-POST');
 
         return json_decode($result, true);
     }

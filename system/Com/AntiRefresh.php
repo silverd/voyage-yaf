@@ -71,9 +71,10 @@ class Com_AntiRefresh
      * @param  Yaf_Request_Abstract $request
      * @param  int $N 5秒内
      * @param  int $M 最多访问10次
+     * @param  string $namespace
      * @return bool
      */
-    public function cumulativeReqLimit($uid, Yaf_Request_Abstract $request, $N = 1, $M = 5)
+    public function cumulativeReqLimit($uid, Yaf_Request_Abstract $request, $N = 1, $M = 5, $namespace = null)
     {
         if ($uid < 1) {
             return true;
@@ -88,7 +89,7 @@ class Com_AntiRefresh
         }
 
         // 累加访问次数
-        $cacheKey = md5('cumlReqCnt:' . $uid);
+        $cacheKey = md5('cumlReqCnt:' . $uid . ':' . $routeStr . ($namespace ? ':' . $namespace : ''));
         $reqCount = F('Memcache')->increment($cacheKey, 1, $N);
 
         // 超过限制：N秒内1个设备号最多访问M次

@@ -32,7 +32,7 @@ class Com_DB
         $dbConf = Core_Config::loadEnv('db');
 
         if (! $dbConf) {
-            throw new Com_DB_Exception('Empty dbconf, plz check: db.conf.php');
+            throw new Com_DB_Exception('Empty dbconf, plz check: conf/' . CONF_ENV . '/app.ini');
         }
 
         // 数据库连接配置信息
@@ -45,7 +45,7 @@ class Com_DB
         }
 
         if (! $dbServers || ! is_array($dbServers)) {
-            throw new Com_DB_Exception('Invalid DB configuration [' . $dbName . '], plz check: db.conf.php');
+            throw new Com_DB_Exception('Invalid DB configuration [' . $dbName . '], plz check: conf/' . CONF_ENV . '/app.ini');
         }
 
         // 已创建的实例
@@ -182,5 +182,48 @@ class Com_DB
         echo '<pre>';
         $output($result);
         exit();
+    }
+
+    /**
+     * 创建周期性分表
+     *
+     * @param string $dbName
+     * @param string $orgTblName 原始表名
+     * @param string $period hourly|daily|weekly|monthly|yearly
+     * @return void
+     */
+    public static function createPeriodTable($dbName, $orgTblName, $period)
+    {
+        if ('hourly' == $period) {
+            $newTblName = $orgTblName . '_h' . date('Y_m_d_H');
+        }
+        elseif ('daily' == $period) {
+            $newTblName = $orgTblName . '_d' . date('Y_m_d');
+        }
+        elseif ('weekly' == $period) {
+            $newTblName = $orgTblName . '_w' . date('Y_W');
+        }
+        elseif ('monthly' == $period) {
+            $newTblName = $orgTblName . '_m' . date('Y_m');
+        }
+        elseif ('yearly' == $period) {
+            $newTblName = $orgTblName . '_y' . date('Y');
+        }
+        else {
+            exit('Invalid Period');
+        }
+
+        $db = self::get($dbName);
+
+        // 表已存在
+        if ($db->isTableExist($newTblName)) {
+            return true;
+        }
+
+        $createTblSql = $db->fetchRow('SHOW CREATE TABLE `' . $orgTblName . '`')['Create Table'];
+        $createTblSql = str_replace('`' . $orgTblName . '`', '`' . $newTblName . '`', $createTblSql);
+
+        // 执行建表
+        $db->query($createTblSql);
     }
 }

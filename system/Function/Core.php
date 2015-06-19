@@ -270,7 +270,9 @@ function decimal($val, $precision = 0)
 {
     if ((float) $val) {
         $val = round((float) $val, (int) $precision);
-        list($a, $b) = explode('.', $val);
+        $tmp = explode('.', $val);
+        $a = isset($tmp[0]) ? $tmp[0] : 0;
+        $b = isset($tmp[1]) ? $tmp[1] : 0;
         if (strlen($b) < $precision) {
             $b = str_pad($b, $precision, '0', STR_PAD_RIGHT);
         }
@@ -450,4 +452,48 @@ function swap(&$first, &$second)
     $temp = $first;
     $first = $second;
     $second = $temp;
+}
+
+function sUrl($url, array $params = [])
+{
+    if (strpos($url, 'http://') === false) {
+        $url = 'http://' . $GLOBALS['SITE_HOST'] . $url;
+    }
+
+    if ($params) {
+        $url .= (strpos($url, '?') === false ? '?' : '&') . http_build_query($params);
+    }
+
+    return $url;
+}
+
+function getCurUrl(array $params = [])
+{
+    $url = 'http://';
+
+    if (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] == 'on') {
+        $url = 'https://';
+    }
+
+    if ($_SERVER['SERVER_PORT'] != '80') {
+        $url .= $_SERVER['HTTP_HOST'] . ':' . $_SERVER['SERVER_PORT'] . $_SERVER['REQUEST_URI'];
+    }
+    else {
+        $url .= $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'];
+    }
+
+    if ($params) {
+        $url .= (strpos($url, '?') === false ? '?' : '&') . http_build_query($params);
+    }
+
+    return $url;
+}
+
+function initDataFields(array &$data, array $fields)
+{
+    foreach ($fields as $field) {
+        if (! isset($data[$field])) {
+            $data[$field] = '';
+        }
+    }
 }

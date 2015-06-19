@@ -56,10 +56,15 @@ abstract class Core_Controller_Api extends Core_Controller_Abstract
         $this->json($resp);
     }
 
+    public function ok($data = null)
+    {
+        $this->output('OK', 0, $data);
+    }
+
     // 验证请求签名（防止篡改请求参数）
     protected function _verifySign()
     {
-        $postData = $this->getPostx();
+        $postData = $this->getPost();
 
         if (! Helper_Api::verifySign($postData, $this->_secretKey)) {
             $this->output('签名验证失败', -9999);

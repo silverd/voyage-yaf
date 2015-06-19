@@ -142,4 +142,21 @@ class Com_Image
 
         return '';
     }
+
+    /**
+     * 输出交错图
+     *
+     * @param string $imgPath
+     * @return void
+     */
+    public static function interlace($imgPath)
+    {
+        header('Content-type: image/jpeg');
+        $image = imagecreatefromjpeg($imgPath);
+
+        imagefilter($image, IMG_FILTER_MEAN_REMOVAL);
+        imageinterlace($image, 1);
+        imagejpeg($image, $imgPath);
+        imagedestroy($image);
+    }
 }

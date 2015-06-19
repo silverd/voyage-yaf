@@ -28,17 +28,17 @@ class Core_Bootstrap
             define('DS', DIRECTORY_SEPARATOR);
         }
 
+        define('WEB_PATH',      APP_PATH  . 'web'      . DS);
         define('TPL_PATH',      APP_PATH  . 'views'    . DS);
         define('DATA_PATH',     APP_PATH  . 'data'     . DS);
-        define('LOG_PATH',      DATA_PATH . 'logs'     . DS);
         define('CACHE_PATH',    DATA_PATH . 'cache'    . DS);
         define('LOCALE_PATH',   DATA_PATH . 'locale'   . DS);
         define('RESOURCE_PATH', DATA_PATH . 'resource' . DS);
         define('THRIFT_PATH',   DATA_PATH . 'thrift'   . DS . 'gen-php' . DS);
 
         // 系统、应用常量定义
-        Yaf_Loader::import(APP_PATH . 'conf/system.php');
-        Yaf_Loader::import(APP_PATH . 'conf/constant.php');
+        Yaf_Loader::import(CONF_PATH . 'system.php');
+        Yaf_Loader::import(CONF_PATH . 'constant.php');
 
         // 设置编码
         header('Content-type: text/html; charset=UTF-8');
@@ -53,13 +53,19 @@ class Core_Bootstrap
         $GLOBALS['_DATE']       = date('Y-m-d H:i:s');
         $GLOBALS['_SQLs']       = array();
 
+        // 读取INI配置
+        $config = Yaf_Application::app()->getConfig();
+
+        // 文件日志目录
+        define('LOG_PATH', $config->get('log_dir') . DS);
+
+        // 把配置保存起来
+        Yaf_Registry::set('config', $config);
+
         // 全局常量、函数等
         Yaf_Loader::import(SYS_PATH . 'Function/Core.php');
         Yaf_Loader::import(APP_PATH . 'library/Function/Core.php');
         Yaf_Loader::getInstance()->registerLocalNamespace(array('Dao', 'MyHelper'));
-
-        // 把配置保存起来
-        Yaf_Registry::set('config', Yaf_Application::app()->getConfig());
 
         // 全局过滤GPC
         if (! get_magic_quotes_gpc()) {
@@ -75,10 +81,11 @@ class Core_Bootstrap
 
     public function initDebugMode()
     {
+        error_reporting(E_ALL | E_STRICT | E_DEPRECATED);
+
         // 调试、错误信息开关
         if (isDebug()) {
             ini_set('display_errors', 'On');
-            error_reporting(E_ALL | E_STRICT);
             // 打印调试信息
             // 非命令行模式才输出调试信息
             if (PHP_SAPI !== 'cli') {
@@ -95,7 +102,6 @@ class Core_Bootstrap
             }
         } else {
             ini_set('display_errors', 'Off');
-            error_reporting(0);
         }
     }
 

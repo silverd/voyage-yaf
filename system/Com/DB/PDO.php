@@ -503,11 +503,11 @@ class Com_DB_PDO
     /**
      * 检查一个表是否存在
      *
-     * @param string $table
+     * @param string $tblName
      * @return bool
      */
-    public function isTableExist($table)
+    public function isTableExist($tblName)
     {
-        return (bool) $this->fetchRow("SHOW TABLES LIKE '{$table}'");
+        return (bool) $this->fetchRow("SHOW TABLES LIKE '{$tblName}'");
     }
 }

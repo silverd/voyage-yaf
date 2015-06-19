@@ -22,9 +22,11 @@ class Com_Daemon
         if (! empty($bin) && ! empty($script)) {
             $count = self::unixProcessCount($bin, $script);
             if ($count < 1) {
-                $execStr = "nohup $bin $script " . ($outputPath ? " > $outputPath " : '') . ' &';
+                $execStr = "nohup $bin $script " . ($outputPath ? " >> $outputPath " : '>/dev/null 2>&1') . ' &';
+                $result = self::cmd($execStr);
                 echo $execStr . PHP_EOL;
-                self::cmd($execStr);
+                echo $result['output'] . PHP_EOL;
+                echo '---' . PHP_EOL;
             }
         }
     }
@@ -80,17 +82,9 @@ class Com_Daemon
      */
     public static function unixProcessCount($bin, $script)
     {
-        self::cmd("ps -ef | grep '$script'", $output);
+        $script = str_replace(array('"', '\''), '', $script);
+        $return = self::cmd('ps aux | grep "' . $script . '" | grep -v "grep" | wc -l');
 
-        $count = 0;
-        if ($output) {
-            foreach ($output as $value) {
-                if (strstr($value, "$bin $script")) {
-                    $count++;
-                }
-            }
-        }
-
-        return $count;
+        return intval($return['output']);
     }
 }

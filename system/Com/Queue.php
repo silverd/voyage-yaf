@@ -10,33 +10,41 @@
 class Com_Queue
 {
     /**
-     * 单例模式
+     * 设置队列守护进程
+     * 死循环弹出队列元素并依次处理
      *
-     * @var array
+     * @param Com_Queue_Abstract $queue 队列实例
+     * @return null
      */
-    private static $_instances = array();
-
-    /**
-     * 获取队列实例
-     *
-     * @param string $queue 队列名
-     * @return object Com_Queue_*
-     */
-    public static function getInstance($queue)
+    public static function setDaemon(Com_Queue_Abstract $queue)
     {
-        if (! isset(self::$_instances[$queue])) {
+        while (true) {
 
-            $config = Core_Config::loadEnv('queue');
+            // 从队列弹出前的一些检测操作
+            $queue->prePop();
 
-            if (! isset($config[$queue]) || ! isset($config[$queue]['class'])) {
-                throw new Core_Exception_Fatal('队列 ' . $queue . ' 配置有误，请检查 queue.conf.php');
+            // 从队列弹出一个任务（JSON）
+            $oneTask = $queue->pop();
+
+            // 队列里没有任务则休息一会儿
+            if (! $oneTask) {
+                sleep(10);
+                continue;
             }
 
-            $className = 'Com_Queue_' . $config[$queue]['class'];
+            try {
+                // 处理从队列弹出的一个任务
+                $result = $queue->postPop($oneTask);
+            }
+            catch (Exception $e) {
+                $result = [
+                    'is_ok'      => 0,
+                    'return_msg' => $e->getMessage(),
+                ];
+            }
 
-            self::$_instances[$queue] = new $className($queue, $config[$queue]);
+            // 记录一个任务的处理结果
+            $queue->log($oneTask, $result);
         }
-
-        return self::$_instances[$queue];
     }
 }

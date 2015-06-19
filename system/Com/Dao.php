@@ -72,6 +72,14 @@ class Com_Dao
     protected $_isDaoNeedCache = true;
 
     /**
+     * 可能会根据哪些字段反查主键
+     * 在行数据更新时，需要清理缓存
+     *
+     * @var array
+     */
+    protected $_getPkByFields = [];
+
+    /**
      * 缓存生存周期（单位：秒）
      * 默认0表示永不过期
      *
@@ -450,8 +458,13 @@ class Com_Dao
         return Helper_Array::fetchPairs($list, $this->_pk, $this->_nameField);
     }
 
-    public function incrByPk($pk, $field, $step = 1)
+    public function incrByPk($pk, $field, $step = 1, $touch = false)
     {
+        // 先保证记录存在
+        if ($touch) {
+            $this->touch($pk, false);
+        }
+
         if (! $result = $this->where($this->_getPkCondition($pk))->increment($field, $step)) {
             return $result;
         }
@@ -464,9 +477,9 @@ class Com_Dao
         return $result;
     }
 
-    public function decrByPk($pk, $field, $step)
+    public function decrByPk($pk, $field, $step = 1, $touch = false)
     {
-        return $this->incrByPk($pk, $field, -$step);
+        return $this->incrByPk($pk, $field, -$step, $touch);
     }
 
     public function replaceByPk(array $setArr, $pk)
@@ -475,13 +488,27 @@ class Com_Dao
             return false;
         }
 
+        if ($this->_getPkByFields) {
+            $orgRow = $this->get($pk);
+        }
+
         if (! $result = $this->replace($setArr)) {
             return $result;
         }
 
         // 清理缓存
         if ($this->_isCached) {
+
+            // 清理本行缓存
             $this->_deleteRowCache($pk);
+
+            // 可能会根据哪些字段反查主键
+            // 在行数据更新时，也需要同时清理掉这些缓存
+            if ($this->_getPkByFields) {
+                foreach ((array) $this->_getPkByFields as $fieldName) {
+                    $this->_deletePkByFieldCache($fieldName, $orgRow[$fieldName]);
+                }
+            }
         }
 
         return $result;
@@ -501,6 +528,10 @@ class Com_Dao
             return false;
         }
 
+        if ($this->_getPkByFields) {
+            $orgRow = $this->get($pk);
+        }
+
         $where = $this->_getPkCondition($pk);
 
         if ($extraWhere) {
@@ -513,7 +544,17 @@ class Com_Dao
 
         // 清理缓存
         if ($this->_isCached) {
+
+            // 清理本行缓存
             $this->_deleteRowCache($pk);
+
+            // 可能会根据哪些字段反查主键
+            // 在行数据更新时，也需要同时清理掉这些缓存
+            if ($this->_getPkByFields) {
+                foreach ((array) $this->_getPkByFields as $fieldName) {
+                    isset($setArr[$fieldName]) && $this->_deletePkByFieldCache($fieldName, $orgRow[$fieldName]);
+                }
+            }
         }
 
         return $result;
@@ -521,7 +562,7 @@ class Com_Dao
 
     /**
      * 批量更新（根据主键）
-     * 注：本方法不支持复合主键
+     * 注：本方法不支持复合主键、不支持 _getPkByFields
      *
      * @param array $setArr
      * @param array $pks
@@ -540,7 +581,8 @@ class Com_Dao
             return $result;
         }
 
-        // 清理缓存
+        // 可能会根据哪些字段反查主键
+        // 在行数据更新时，需要清理缓存
         if ($this->_isCached) {
             foreach ($pks as $pk) {
                 $this->_deleteRowCache($pk);
@@ -559,6 +601,10 @@ class Com_Dao
      */
     public function deleteByPk($pk, array $extraWhere = array())
     {
+        if ($this->_getPkByFields) {
+            $orgRow = $this->get($pk);
+        }
+
         $where = $this->_getPkCondition($pk);
 
         if ($extraWhere) {
@@ -571,7 +617,17 @@ class Com_Dao
 
         // 清理缓存
         if ($this->_isCached) {
+
+            // 清理本行缓存
             $this->_deleteRowCache($pk);
+
+            // 可能会根据哪些字段反查主键
+            // 在行数据更新时，也需要同时清理掉这些缓存
+            if ($this->_getPkByFields) {
+                foreach ((array) $this->_getPkByFields as $fieldName) {
+                    $this->_deletePkByFieldCache($fieldName, $orgRow[$fieldName]);
+                }
+            }
         }
 
         return $result;
@@ -579,7 +635,7 @@ class Com_Dao
 
     /**
      * 批量删除（根据主键）
-     * 注：本方法不支持复合主键
+     * 注：本方法不支持复合主键、不支持 _getPkByFields
      *
      * @param array $pks
      * @param array $extraWhere 格外的WHERE条件
@@ -670,7 +726,25 @@ class Com_Dao
             $pkString = $pk;
         }
 
-        return md5($dbName . ':' . $tableName . ':get:' . $pkString);
+        return md5($dbName . ':' . $tableName . ':' . self::getTblVersion($dbName, $tableName) . ':get:' . $pkString);
+    }
+
+    public static function getTblVersion($dbName, $tableName)
+    {
+        $cacheKey = md5($dbName . ':' . $tableName . ':DaoCacheVersion');
+
+        return F('Redis')->default->get($cacheKey);
+    }
+
+    public static function setTblVersion($dbName, $tableName, $newVersion = null)
+    {
+        $cacheKey = md5($dbName . ':' . $tableName . ':DaoCacheVersion');
+
+        if (null === $newVersion) {
+            $newVersion = uniqid(mt_rand(0, 99999));
+        }
+
+        return F('Redis')->default->set($cacheKey, $newVersion);
     }
 
     // 本方法不支持复合主键

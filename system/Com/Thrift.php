@@ -91,7 +91,7 @@ class Com_Thrift
 
         // 记录所有 thrift 请求日志
         if ($this->_config['log_request']) {
-            Com_Log::write('thriftRequest', $logMsg);
+            Com_Logger_Redis::info('thriftRequest', $logMsg);
         }
 
         try {
@@ -112,7 +112,7 @@ class Com_Thrift
             // 记录所有 thrift 响应日志
             if ($this->_config['log_response']) {
                 $logMsg .= var_export($result, true) . "\n";
-                Com_Log::write('thriftResponse', $logMsg);
+                Com_Logger_Redis::info('thriftResponse', $logMsg);
             }
 
             return $result;
@@ -126,7 +126,7 @@ class Com_Thrift
             }
 
             // 写错误日志
-            Com_Log::write('thriftError', $logMsg);
+            Com_Logger_Redis::error('thriftError', $logMsg);
 
             return new Com_Thrift_Exception($logMsg, $e->getCode());
         }

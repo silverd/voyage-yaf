@@ -8,7 +8,7 @@ class Com_DB_SqlBuilder
         'replace'      => 'REPLACE INTO {TABLE} ({KEYSQL}) VALUES ({VALUESQL})',
         'update'       => 'UPDATE {TABLE} SET {SETSQL} {WHERE} {ORDER} {LIMIT}',
         'delete'       => 'DELETE FROM {TABLE} {WHERE} {ORDER} {LIMIT}',
-        'batchInsert'  => 'INSERT INTO {TABLE} ({KEYSQL}) VALUES {VALUESQL}',
+        'batchInsert'  => 'INSERT {IGNORE} INTO {TABLE} ({KEYSQL}) VALUES {VALUESQL}',
         'batchReplace' => 'REPLACE INTO {TABLE} ({KEYSQL}) VALUES {VALUESQL}',
     );
 
@@ -161,9 +161,10 @@ class Com_DB_SqlBuilder
      *
      * @param array $setArrs
      * @param bool $isReplace
+     * @param bool $isIgnoreDup 忽略重复
      * @return int
      */
-    public function buildBatchInsertSql(array $setArrs, $isReplace = false)
+    public function buildBatchInsertSql(array $setArrs, $isReplace = false, $isIgnoreDup = false)
     {
         $params = array();
         $insertkeysqlGot = false;
@@ -198,9 +199,10 @@ class Com_DB_SqlBuilder
         }
 
         $sql = str_replace(
-            array('{TABLE}', '{KEYSQL}', '{VALUESQL}'),
+            array('{TABLE}', '{IGNORE}', '{KEYSQL}', '{VALUESQL}'),
             array(
                 $this->_parseTable($this->_options['table']),
+                $isIgnoreDup ? 'IGNORE' : '',
                 $insertkeysql,
                 $insertvaluesql,
             ),

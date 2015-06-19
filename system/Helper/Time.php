@@ -14,18 +14,15 @@ class Helper_Time
      */
     public static function getTime($time)
     {
-        $nowTime        = time();
-        $todayBeginTime = strtotime('today');
-        $beginToNow     = $nowTime - $todayBeginTime;
-        $val            = max($nowTime - $time, 1);
+        $val = max(time() - $time, 1);
 
         if ($val < 60) {
             return __('{n}秒前', array('n' => $val));
         }
-        elseif ($val >= 60 && $val < (60 * 60)) {
+        elseif ($val < 3600) {
             return __('{n}分钟前', array('n' => intval($val / 60)));
         }
-        elseif ($val >= (60 * 60) && $val < (60 * 60 *24) && $beginToNow > $val) {
+        elseif ($val < 86400 && $time > strtotime('today')) {
             return date(_('今天') . ' H:i ', $time);
         }
         else {
@@ -33,6 +30,23 @@ class Helper_Time
         }
     }
 
+    public static function getTime2($time)
+    {
+        $val = max(time() - $time, 1);
+
+        if ($val < 60) {
+            return $val . '秒前';
+        }
+        elseif ($val < 3600) {
+            return intval($val / 60) . '分钟前';
+        }
+        elseif ($val < 86400) {
+            return intval($val / 3600) . '小时前';
+        }
+        else {
+            return ceil($val/86400) . '天前';
+        }
+    }
 
     /**
      * 将秒级时间转化为x小时x分x秒的中文格式

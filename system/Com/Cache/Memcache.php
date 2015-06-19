@@ -29,7 +29,7 @@ class Com_Cache_Memcache
      * @param string $group
      * @throws Core_Exception_Fatal
      */
-    public function __construct($group = 'global')
+    public function __construct($group = 'default')
     {
         $config = Core_Config::loadEnv('memcache');
 

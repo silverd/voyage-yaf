@@ -9,28 +9,27 @@
 
 class Com_Http
 {
-    private static $_timeout = 30;
-
     /**
      * 发送请求（对外公开的入口）
      *
      * @param string $url
      * @param array $data
      * @param string $via CURL-POST | CURL-GET | GET | SOCKET-POST | SOCKET-GET
+     * @param int $timeOut
      * @return mixed
      */
-    public static function sendRequest($url, $data = array(), $via = 'GET', $isHttps = false)
+    public static function request($url, $data = array(), $via = 'GET', $isHttps = false, $timeOut = 0)
     {
         if ($via == 'CURL-POST') {
-            return self::_curl($url, $data, 'POST', $isHttps);
+            return self::_curl($url, $data, 'POST', $isHttps, $timeOut);
         } elseif ($via == 'CURL-GET') {
-            return self::_curl($url, $data, 'GET', $isHttps);
+            return self::_curl($url, $data, 'GET', $isHttps, $timeOut);
         } elseif ($via == 'GET') {
-            return self::_get($url, $data, $isHttps);
+            return self::_get($url, $data, $isHttps, $timeOut);
         } elseif ($via == 'SOCKET-POST') {
-            return self::_socket($url, $data, 'POST', $isHttps);
+            return self::_socket($url, $data, 'POST', $isHttps, $timeOut);
         } elseif ($via == 'SOCKET-GET') {
-            return self::_socket($url, $data, 'GET', $isHttps);
+            return self::_socket($url, $data, 'GET', $isHttps, $timeOut);
         }
     }
 
@@ -57,12 +56,13 @@ class Com_Http
      *
      * @param string $url
      * @param array $data
+     * @param int $timeOut
      * @return bool
      */
-    private static function _get($url, $data = array(), $isHttps = false)
+    private static function _get($url, $data = array(), $isHttps = false, $timeOut = 0)
     {
         $url = self::_buildUrl($url, $data);
-        return file_get_contents($url);
+        return self::_fileGetContents($url, $timeOut);
     }
 
     /**
@@ -71,9 +71,10 @@ class Com_Http
      * @param string $url
      * @param array $data
      * @param string $method POST | GET
+     * @param int $timeOut
      * @return bool
      */
-    private static function _curl($url, $data = array(), $method = 'POST', $isHttps = false)
+    private static function _curl($url, $data = array(), $method = 'POST', $isHttps = false, $timeOut = 0)
     {
         $ch = curl_init();
 
@@ -88,7 +89,11 @@ class Com_Http
         curl_setopt($ch, CURLOPT_URL, $url);
         curl_setopt($ch, CURLOPT_HEADER, 0);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, self::$_timeout);
+
+        if ($timeOut) {
+            curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, $timeOut);
+            curl_setopt($ch, CURLOPT_TIMEOUT, $timeOut);
+        }
 
         // https 处理
         // 方式1：不验证证书
@@ -98,10 +103,12 @@ class Com_Http
         }
         // 方式2：指定SSL证书
         elseif ($isHttps) {
-            $cacertPath = $isHttps;
+            $caPaths = $isHttps;
             curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true); // SSL证书认证
             curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 2);    // 严格认证
-            curl_setopt($ch, CURLOPT_CAINFO, $cacertPath);  // 证书绝对路径
+            curl_setopt($ch, CURLOPT_SSLCERT, $caPaths['ssl_cert']);
+            curl_setopt($ch, CURLOPT_SSLKEY, $caPaths['ssl_key']);
+            curl_setopt($ch, CURLOPT_CAINFO, $caPaths['ca_info']);
         }
 
         $result = curl_exec($ch);
@@ -116,9 +123,10 @@ class Com_Http
      * @param string $url
      * @param array $data
      * @param string $method POST | GET
+     * @param int $timeOut
      * @return bool
      */
-    private function _socket($url, $data = array(), $method = 'POST', $isHttps = false)
+    private function _socket($url, $data = array(), $method = 'POST', $isHttps = false, $timeOut = 0)
     {
         $urlParts = parse_url($url);
 
@@ -135,7 +143,7 @@ class Com_Http
 
         socket_set_nonblock($fsock);
         @socket_connect($fsock, $host, $port);
-        $ret = socket_select($fd_read = array($fsock), $fd_write = array($fsock), $except = null, self::$_timeout, 0);
+        $ret = socket_select($fd_read = array($fsock), $fd_write = array($fsock), $except = null, $timeOut, 0);
         if ($ret != 1) {
             @socket_close($fsock);
             return -2;
@@ -163,7 +171,7 @@ class Com_Http
         unset($in);
 
         socket_set_block($fsock);
-        @socket_set_option($fsock, SOL_SOCKET, SO_RCVTIMEO, array('sec' => self::$_timeout, 'usec' => 0));
+        @socket_set_option($fsock, SOL_SOCKET, SO_RCVTIMEO, array('sec' => $timeOut, 'usec' => 0));
 
         $out = '';
         while ($buff = socket_read($fsock, 2048)){
@@ -191,10 +199,14 @@ class Com_Http
      * @param int $timeOut
      * @return string
      */
-    public static function fileGetContents($url, $timeOut = 5)
+    private static function _fileGetContents($url, $timeOut = 0)
     {
         if (empty($url)) {
             return false;
+        }
+
+        if (! $timeOut) {
+            return file_get_contents($url);
         }
 
         $ctx = stream_context_create(array(

@@ -14,31 +14,36 @@ class Com_DB_Exception extends Core_Exception_SQL
      *
      * @param Exception $e
      * @param string $msg
-     * @return boolean
+     * @param array $sqlInfo
+     * @return bool
      */
-    public static function process($e, $msg, $sqlInfo = array())
+    public static function process(Exception $e, $msg, array $sqlInfo = [])
     {
-        $msg .= "\n";
+        $msg .= PHP_EOL;
 
         if ($sqlInfo) {
-            $msg .= self::_sqlInfoToString($sqlInfo) . "\n";
+            $msg .= self::__sqlInfoToString($sqlInfo) . PHP_EOL;
         }
 
-        $msg .= $e->getMessage() . "\n";
+        $msg .= $e->getMessage() . PHP_EOL;
 
         foreach ($e->getTrace() as $key => $trace) {
             if (! isset($trace['file']) && ! isset($trace['line'])) {
                 continue;
             }
-            $msg .= ($key + 1) . ' File:' . $trace['file']. ' Line:' . $trace['line'] . "\n";
+            $msg .= ($key + 1) . ' File:' . $trace['file']. ' Line:' . $trace['line'] . PHP_EOL;
         }
 
+        // 写错误日志
+        Com_Logger_Redis::error('sqlErrors', $msg);
+
+        // 调试模式直接输出
         if (isDebug()) {
             throw new self($msg);
         }
     }
 
-    private static function _sqlInfoToString($sqlInfo)
+    private static function __sqlInfoToString(array $sqlInfo)
     {
         if (! $sqlInfo) {
             return null;
@@ -48,9 +53,9 @@ class Com_DB_Exception extends Core_Exception_SQL
 
         if ($sqlInfo['params']) {
             $return .= ' [' . implode(',', $sqlInfo['params']) . ']';
-            $return .= "\nRealSQL: " . $sqlInfo['realSql'];
+            $return .= PHP_EOL . 'RealSQL: ' . $sqlInfo['realSql'];
         }
 
-        return $return . "\nHost: " . $sqlInfo['host'] . ', Database: ' . $sqlInfo['dbName'];
+        return $return . PHP_EOL . 'Host: ' . $sqlInfo['host'] . ', Database: ' . $sqlInfo['dbName'];
     }
 }
