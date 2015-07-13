@@ -290,15 +290,15 @@ abstract class Core_Controller_Web extends Core_Controller_Abstract
         return $formHash == $formHashGet ? true : false;
     }
 
-    public function getDx($key)
+    public function getDx($key, $extraKey = null)
     {
         if (! $value = $this->getx($key)) {
             return null;
         }
 
-        $value = $this->decrypt($value);
+        $value = $this->decrypt($value, $extraKey);
 
-        header('X-Rijndael-' . $key . ':' . $value);
+        // header('X-Rijndael-' . $key . ':' . $value);
 
         return $value;
     }
@@ -311,7 +311,7 @@ abstract class Core_Controller_Web extends Core_Controller_Abstract
 
         $values = is_array($value) ? array_filter(array_map(array($this, 'decrypt'), $value)) : $this->decrypt($value);
 
-        header('X-Rijndael-' . $key . ':' . implode(',', $values));
+        // header('X-Rijndael-' . $key . ':' . implode(',', $values));
 
         return $values;
     }

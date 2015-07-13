@@ -431,3 +431,26 @@ class Com_Upload
         return (substr($hash, 0, 2) . DIRECTORY_SEPARATOR . substr($hash, 2, 2));
     }
 }
+
+/*
+    Example:
+
+    // 无需上传任何文件
+    if (!$_FILES['pic_name']['name']) {
+        return false;
+    }
+
+    $config = [
+        'allowedExts' => 'jpg,jpeg,gif',
+        'savePath'    => WEB_PATH . 'upload', // 上传目录
+    ];
+
+    $uploadObj = new Com_Upload($config);
+    if (!$uploadObj->save($fieldName)) {
+        exit($uploadObj->error());
+    }
+
+    // 图片文件名
+    $picName = $uploadObj->getSaveNames(true);
+    echo $picName;
+ */

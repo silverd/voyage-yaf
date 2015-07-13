@@ -23,6 +23,9 @@ abstract class Core_Controller_Cli extends Core_Controller_Abstract
         set_time_limit(0);
         ini_set('memory_limit', '1024M');
 
+        // 解决 Redis 队列 blpop 阻塞超时问题：read error on connection
+        ini_set('default_socket_timeout', -1);
+
         // 不输出SQL调试信息
         // 防止本地浏览器模式运行时header超大
         Com_DB::enableLogging(false);

@@ -11,12 +11,7 @@ Yaf_Loader::import(SYS_PATH . 'Third/PHPMailer/class.phpmailer.php');
 
 class Com_Mailer_PHPMailer
 {
-    const
-        SMTP_HOST = 'smtp.qq.com',
-        SMTP_USER = 'noreply@morecruit.cn',
-        SMTP_PWD  = 'Noreply1234';
-
-    public static function send(array $params)
+    public static function send(array $params, $isDebug = false)
     {
         $mail = new PHPMailer();
 
@@ -25,10 +20,10 @@ class Com_Mailer_PHPMailer
 
         $mail->IsSMTP();
         $mail->SMTPAuth  = true;
-        $mail->SMTPDebug = false;
-        $mail->Host      = self::SMTP_HOST;
-        $mail->Username  = self::SMTP_USER;
-        $mail->Password  = self::SMTP_PWD;
+        $mail->SMTPDebug = $isDebug;
+        $mail->Host      = PHP_MAILER_SMTP_HOST;
+        $mail->Username  = PHP_MAILER_SMTP_USER;
+        $mail->Password  = PHP_MAILER_SMTP_PWD;
 
         $mail->From      = $params['from'];
         $mail->FromName  = $params['fromname'];

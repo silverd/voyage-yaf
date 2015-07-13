@@ -24,9 +24,10 @@ class Com_Daemon
             if ($count < 1) {
                 $execStr = "nohup $bin $script " . ($outputPath ? " >> $outputPath " : '>/dev/null 2>&1') . ' &';
                 $result = self::cmd($execStr);
+                echo date('Y-m-d H:i:s') . PHP_EOL;
                 echo $execStr . PHP_EOL;
                 echo $result['output'] . PHP_EOL;
-                echo '---' . PHP_EOL;
+                echo '------' . PHP_EOL;
             }
         }
     }

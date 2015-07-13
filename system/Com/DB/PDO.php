@@ -35,14 +35,14 @@ class Com_DB_PDO
      *
      * @var array
      */
-    protected $_writeConf = array();
+    protected $_writeConf = [];
 
     /**
      * 从库连接配置信息
      *
      * @var object
      */
-    protected $_readConf = array();
+    protected $_readConf = [];
 
     /**
      * 是否强制连接主库
@@ -155,7 +155,7 @@ class Com_DB_PDO
 
             $dsn = 'mysql:dbname=' . $conf['path'] . ';host=' . $conf['host'] . ';port=' . $conf['port'];
 
-            $params = array();
+            $params = [];
 
             // 持久连接
             if ($this->_persistent) {
@@ -211,7 +211,7 @@ class Com_DB_PDO
      * @param bool $forceMaster 是否强制连接主库
      * @return PDO Statement
      */
-    protected function _autoExecute($sql, $params = array(), $forceMaster = false)
+    protected function _autoExecute($sql, $params = [], $forceMaster = false)
     {
         try {
 
@@ -221,7 +221,7 @@ class Com_DB_PDO
             }
 
             // 调试模式打印SQL信息
-            $explain = array();
+            $explain = [];
             if (Com_DB::enableLogging() && DEBUG_EXPLAIN_SQL) {
                 $explain = $this->_explain($sql, $params);
             }
@@ -235,7 +235,7 @@ class Com_DB_PDO
             }
 
             // 绑定参数
-            $params = $params ? (array) $params: array();
+            $params = $params ? (array) $params : [];
 
             // 执行 SQL
             if (! $stmt->execute($params)) {
@@ -267,12 +267,12 @@ class Com_DB_PDO
     protected function _explain($sql, $params)
     {
         if ('select' != strtolower(substr($sql, 0, 6))) {
-            return array();
+            return [];
         }
 
         $sql = Com_DB::getRealSql($sql, $params);
 
-        $explain = array();
+        $explain = [];
         $stmt = $this->_db->query("EXPLAIN " . $sql);
         if ($stmt instanceof PDOStatement) {
             $explain = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -312,7 +312,7 @@ class Com_DB_PDO
      *         int rowCount 替换、更新、删除
      *         false SQL 执行失败
      */
-    public function query($sql, $params = array(), $forceMaster = true)
+    public function query($sql, $params = [], $forceMaster = true)
     {
         $stmt = $this->_autoExecute($sql, $params, $forceMaster);
         if (! $stmt) {
@@ -335,13 +335,15 @@ class Com_DB_PDO
      * @param bool $forceMaster 是否强制连接主库
      * @return array
      */
-    public function fetchAll($sql, $params = array(), $forceMaster = false)
+    public function fetchAll($sql, $params = [], $forceMaster = false)
     {
         $stmt = $this->_autoExecute($sql, $params, $forceMaster);
+
         if ($stmt) {
-            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+            return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
         }
-        return array();
+
+        return [];
     }
 
     /**
@@ -352,13 +354,15 @@ class Com_DB_PDO
      * @param bool $forceMaster 是否强制连接主库
      * @return array
      */
-    public function fetchCol($sql, $params = array(), $forceMaster = false)
+    public function fetchCol($sql, $params = [], $forceMaster = false)
     {
         $stmt = $this->_autoExecute($sql, $params, $forceMaster);
+
         if ($stmt) {
-            return $stmt->fetchAll(PDO::FETCH_COLUMN, 0);
+            return $stmt->fetchAll(PDO::FETCH_COLUMN, 0) ?: [];
         }
-        return array();
+
+        return [];
     }
 
     /**
@@ -369,17 +373,19 @@ class Com_DB_PDO
      * @param bool $forceMaster 是否强制连接主库
      * @return array
      */
-    public function fetchPairs($sql, $params = array(), $forceMaster = false)
+    public function fetchPairs($sql, $params = [], $forceMaster = false)
     {
         $stmt = $this->_autoExecute($sql, $params, $forceMaster);
+
         if ($stmt) {
-            $data = array();
+            $data = [];
             while ($row = $stmt->fetch(PDO::FETCH_NUM)) {
                 $data[$row[0]] = $row[1];
             }
             return $data;
         }
-        return array();
+
+        return [];
     }
 
     /**
@@ -390,18 +396,20 @@ class Com_DB_PDO
      * @param bool $forceMaster 是否强制连接主库
      * @return array
      */
-    public function fetchAssoc($sql, $params = array(), $forceMaster = false)
+    public function fetchAssoc($sql, $params = [], $forceMaster = false)
     {
         $stmt = $this->_autoExecute($sql, $params, $forceMaster);
+
         if ($stmt) {
-            $data = array();
+            $data = [];
             while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
                 $key = current($row);
                 $data[$key] = $row;
             }
             return $data;
         }
-        return array();
+
+        return [];
     }
 
     /**
@@ -412,12 +420,14 @@ class Com_DB_PDO
      * @param bool $forceMaster 是否强制连接主库
      * @return array
      */
-    public function fetchOne($sql, $params = array(), $forceMaster = false)
+    public function fetchOne($sql, $params = [], $forceMaster = false)
     {
         $stmt = $this->_autoExecute($sql, $params, $forceMaster);
+
         if ($stmt) {
-            return $stmt->fetchColumn();
+            return $stmt->fetchColumn() ?: null;
         }
+
         return null;
     }
 
@@ -429,13 +439,15 @@ class Com_DB_PDO
      * @param bool $forceMaster 是否强制连接主库
      * @return array
      */
-    public function fetchRow($sql, $params = array(), $forceMaster = false)
+    public function fetchRow($sql, $params = [], $forceMaster = false)
     {
         $stmt = $this->_autoExecute($sql, $params, $forceMaster);
+
         if ($stmt) {
-            return $stmt->fetch(PDO::FETCH_ASSOC);
+            return $stmt->fetch(PDO::FETCH_ASSOC) ?: [];
         }
-        return array();
+
+        return [];
     }
 
     /**
@@ -457,7 +469,7 @@ class Com_DB_PDO
      * @param bool $forceMaster
      * @return PDO Statement
      */
-    public function execute($sql, $params = array(), $forceMaster = true)
+    public function execute($sql, $params = [], $forceMaster = true)
     {
         $stmt = $this->_autoExecute($sql, $params, $forceMaster);
         return $stmt ? $stmt : false;

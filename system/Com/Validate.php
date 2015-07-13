@@ -123,15 +123,15 @@ class Com_Validate
     /**
      * Check if is email
      *
-     * @param string $email
+     * @param string $string
      * @return bool
      */
-    public static function email($email)
+    public static function email($string)
     {
         // $patterns = '/^[a-z0-9_\-]+(\.[_a-z0-9\-]+)*@([_a-z0-9\-]+\.)+([a-z]{2}|aero|arpa|biz|com|coop|edu|gov|info|int|jobs|mil|museum|name|nato|net|org|pro|travel)$/';
         $patterns = '/^\w+([-.]?\w+)*@\w+([-.]\w+)*\.\w+([-.]\w+)*$/';
 
-        return preg_match($patterns, $email) ? true : false;
+        return preg_match($patterns, $string) ? true : false;
     }
 
     /**
@@ -142,7 +142,10 @@ class Com_Validate
      */
     public static function mobile($string)
     {
-        return preg_match('/^(((1[3|4|5|8]{1}[0-9]{1}))[0-9]{8})$/', $string);
+        // $patterns = '/^(((1[3|4|5|8]{1}[0-9]{1}))[0-9]{8})$/';
+        $patterns = '/^\d{6,20}$/';
+
+        return preg_match($patterns, $string) ? true : false;
     }
 
     /**

@@ -16,40 +16,6 @@ class Com_DaoStatic extends Com_Dao
     }
 
     /**
-     * 根据主键 fetchRow
-     * 覆盖 Com_Dao 父类的方法
-     *
-     * @param mixed $pk
-     * @return array
-     */
-    public function get($pk)
-    {
-        // 禁用缓存时
-        if (! $this->_isCached) {
-            return $this->where($this->_getPkCondition($pk))->fetchRow();
-        }
-
-        $cacheKey = $this->_getRowCacheKey($pk);
-
-        // 保证相同的静态记录只读取一遍
-        if (isset($this->_rowDatas[$cacheKey])) {
-            return $this->_rowDatas[$cacheKey];
-        }
-
-        $row = $this->_cache->get($cacheKey);
-
-        // 这里是和父类的不同处
-        // 静态库的 get() 方法，即使取不到数据，也需要缓存住
-        if ($row === false) {
-            $row = $this->where($this->_getPkCondition($pk))->fetchRow();
-            $this->_cache->set($cacheKey, $row, $this->_cacheTTL);
-            $this->_rowDatas[$cacheKey] = $row;
-        }
-
-        return $row;
-    }
-
-    /**
      * 魔术缓存拦截读取
      *
      * @param string $method

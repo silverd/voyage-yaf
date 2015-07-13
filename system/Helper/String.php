@@ -462,4 +462,16 @@ class Helper_String
             }
         }
     }
+
+    // 获取文件后缀名
+    public static function getFileExt($name, $withDot = false)
+    {
+        $pathinfo = pathinfo($name);
+
+        if (isset($pathinfo['extension'])) {
+            return strtolower(($withDot ? '.' : '' ) . $pathinfo['extension']);
+        }
+
+        return '';
+    }
 }

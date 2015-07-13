@@ -64,7 +64,7 @@ class Com_DB_SqlBuilder
         );
     }
 
-    public function _buildInsertSql(array &$setArr, $isReplace = false, $isIgnoreDup = false)
+    private function _buildInsertSql(array &$setArr, $isReplace = false, $isIgnoreDup = false)
     {
         $insertkeysql = $insertvaluesql = $comma = '';
         foreach ($setArr as $key => $value) {

@@ -26,12 +26,6 @@ class Com_Queue
             // 从队列弹出一个任务（JSON）
             $oneTask = $queue->pop();
 
-            // 队列里没有任务则休息一会儿
-            if (! $oneTask) {
-                sleep(10);
-                continue;
-            }
-
             try {
                 // 处理从队列弹出的一个任务
                 $result = $queue->postPop($oneTask);

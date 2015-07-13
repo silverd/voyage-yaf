@@ -37,8 +37,8 @@ class Com_Dao
      */
     protected $_nameField = 'name';
 
-    protected $_options  = array();
-    protected $_params   = array();
+    protected $_options  = [];
+    protected $_params   = [];
     protected $_isMaster = false;
 
     protected $_sqlBuilder;
@@ -48,7 +48,7 @@ class Com_Dao
      *
      * @var array(Com_DB_PDO)
      */
-    protected static $_dbs = array();
+    protected static $_dbs = [];
 
     /**
      * 缓存连接实例
@@ -194,8 +194,8 @@ class Com_Dao
 
     public function reset()
     {
-        $this->_options  = array();
-        $this->_params   = array();
+        $this->_options  = [];
+        $this->_params   = [];
         $this->_isMaster = false;
         $this->_isCached = $this->_isDaoNeedCache;
 
@@ -326,6 +326,20 @@ class Com_Dao
         // 重置存储的选项
         $this->reset();
 
+        // 清理缓存
+        if ($this->_isCached) {
+            if ('insert' == $method) {
+                $pkValue = $this->_getPkValue($args[0]);
+                $pkValue && $this->_deleteRowCache($pkValue);
+            }
+            elseif ('batchInsert' == $method) {
+                foreach ($args[0] as $pk) {
+                    $pkValue = $this->_getPkValue($pk);
+                    $pkValue && $this->_deleteRowCache($pkValue);
+                }
+            }
+        }
+
         return $result;
     }
 
@@ -339,16 +353,34 @@ class Com_Dao
         return $this->field('SUM(`' . $field . '`)')->fetchOne() ?: 0;
     }
 
-    // 本方法不支持复合主键
     public function fetchPk()
     {
-        return $this->field($this->_pk)->fetchOne();
+        // 复合主键
+        if (is_array($this->_pk)) {
+            if (! $pkRow = $this->field($this->_pk)->fetchRow()) {
+                return [];
+            }
+            return array_values($pkRow);
+        }
+        // 单列主键
+        else {
+            return $this->field($this->_pk)->fetchOne();
+        }
     }
 
-    // 本方法不支持复合主键
     public function fetchPks()
     {
-        return $this->field($this->_pk)->fetchCol();
+        // 复合主键
+        if (is_array($this->_pk)) {
+            if (! $pkRows = $this->field($this->_pk)->fetchAll()) {
+                return [];
+            }
+            return array_map('array_values', $pkRows);
+        }
+        // 单列主键
+        else {
+            return $this->field($this->_pk)->fetchCol();
+        }
     }
 
     public function fetchNames()
@@ -356,15 +388,16 @@ class Com_Dao
         return $this->field($this->_nameField)->fetchCol();
     }
 
-    protected $_rowDatas = array();
+    protected $_rowDatas = [];
 
     /**
      * 根据主键 fetchRow
      *
      * @param mixed $pk
+     * @param bool $$forceCached 强制缓存结果集，即使从DB中查不到记录
      * @return array
      */
-    public function get($pk)
+    public function get($pk, $forceCached = false)
     {
         // 禁用缓存时
         if (! $this->_isCached) {
@@ -378,8 +411,14 @@ class Com_Dao
             return $this->_rowDatas[$cacheKey];
         }
 
-        if (! $row = $this->_cache->get($cacheKey)) {
-            if ($row = $this->where($this->_getPkCondition($pk))->fetchRow()) {
+        $row = $this->_cache->get($cacheKey);
+
+        if ($row === false) {
+
+            // 查不到记录则返回空数组 []
+            $row = $this->where($this->_getPkCondition($pk))->fetchRow();
+
+            if ($row || $forceCached) {
                 $this->_cache->set($cacheKey, $row, $this->_cacheTTL);
                 $this->_rowDatas[$cacheKey] = $row;
             }
@@ -398,7 +437,7 @@ class Com_Dao
                         ->fetchAssoc();
         }
 
-        $return = $cacheKeys = array();
+        $return = $cacheKeys = [];
 
         // 整理缓存key名称
         foreach ($pks as $pk) {
@@ -422,7 +461,7 @@ class Com_Dao
         return $return;
     }
 
-    public function getField($pk, $field)
+    public function getField($pk, $field, $forceCached = false)
     {
         // 禁用缓存时
         if (! $this->_isCached) {
@@ -431,7 +470,7 @@ class Com_Dao
                         ->fetchOne();
         }
 
-        $data = $this->get($pk);
+        $data = $this->get($pk, $forceCached);
         return isset($data[$field]) ? $data[$field] : null;
     }
 
@@ -504,7 +543,7 @@ class Com_Dao
 
             // 可能会根据哪些字段反查主键
             // 在行数据更新时，也需要同时清理掉这些缓存
-            if ($this->_getPkByFields) {
+            if ($this->_getPkByFields && $orgRow) {
                 foreach ((array) $this->_getPkByFields as $fieldName) {
                     $this->_deletePkByFieldCache($fieldName, $orgRow[$fieldName]);
                 }
@@ -522,7 +561,7 @@ class Com_Dao
      * @param array $extraWhere 格外的WHERE条件
      * @return bool/int
      */
-    public function updateByPk(array $setArr, $pk, array $extraWhere = array())
+    public function updateByPk(array $setArr, $pk, array $extraWhere = [])
     {
         if (! $setArr) {
             return false;
@@ -550,7 +589,7 @@ class Com_Dao
 
             // 可能会根据哪些字段反查主键
             // 在行数据更新时，也需要同时清理掉这些缓存
-            if ($this->_getPkByFields) {
+            if ($this->_getPkByFields && $orgRow) {
                 foreach ((array) $this->_getPkByFields as $fieldName) {
                     isset($setArr[$fieldName]) && $this->_deletePkByFieldCache($fieldName, $orgRow[$fieldName]);
                 }
@@ -569,9 +608,9 @@ class Com_Dao
      * @param array $extraWhere 格外的WHERE条件
      * @return bool/int
      */
-    public function updateByPks(array $setArr, array $pks, array $extraWhere = array())
+    public function updateByPks(array $setArr, array $pks, array $extraWhere = [])
     {
-        $where = array($this->_pk => array('IN', $pks));
+        $where = [$this->_pk => ['IN', $pks]];
 
         if ($extraWhere) {
             $where = array_merge($where, $extraWhere);
@@ -599,7 +638,7 @@ class Com_Dao
      * @param array $extraWhere 格外的WHERE条件
      * @return bool
      */
-    public function deleteByPk($pk, array $extraWhere = array())
+    public function deleteByPk($pk, array $extraWhere = [])
     {
         if ($this->_getPkByFields) {
             $orgRow = $this->get($pk);
@@ -623,7 +662,7 @@ class Com_Dao
 
             // 可能会根据哪些字段反查主键
             // 在行数据更新时，也需要同时清理掉这些缓存
-            if ($this->_getPkByFields) {
+            if ($this->_getPkByFields && $orgRow) {
                 foreach ((array) $this->_getPkByFields as $fieldName) {
                     $this->_deletePkByFieldCache($fieldName, $orgRow[$fieldName]);
                 }
@@ -641,7 +680,7 @@ class Com_Dao
      * @param array $extraWhere 格外的WHERE条件
      * @return bool
      */
-    public function deleteByPks(array $pks, array $extraWhere = array())
+    public function deleteByPks(array $pks, array $extraWhere = [])
     {
         $where = array($this->_pk => array('IN', $pks));
 
@@ -716,6 +755,23 @@ class Com_Dao
         }
     }
 
+    protected function _getPkValue(array $setArr)
+    {
+        if (is_array($this->_pk)) {
+            $pkValue = [];
+            foreach ($this->_pk as $pk) {
+                if (isset($setArr[$pk])) {
+                    $pkValue[] = $setArr[$pk];
+                }
+            }
+        }
+        else {
+            $pkValue = isset($setArr[$this->_pk]) ? $setArr[$this->_pk] : null;
+        }
+
+        return $pkValue;
+    }
+
     // 构造单条记录缓存key
     public static function buildRowCacheKey($dbName, $tableName, $pk)
     {
@@ -747,7 +803,6 @@ class Com_Dao
         return F('Redis')->default->set($cacheKey, $newVersion);
     }
 
-    // 本方法不支持复合主键
     protected function _getPkByField($fieldName, $fieldValue)
     {
         // 禁用缓存时
@@ -766,7 +821,6 @@ class Com_Dao
         return $pk;
     }
 
-    // 本方法不支持复合主键
     protected function _deletePkByFieldCache($fieldName, $fieldValue)
     {
         $cacheKey = md5($this->_dbName . ':' . $this->_tableName . ':' . $fieldName . ':' . $fieldValue . ':pk');

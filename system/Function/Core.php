@@ -47,6 +47,8 @@ function S($className)
  */
 function F($component)
 {
+    $component = ucfirst($component);
+
     if (! isset($GLOBALS['__G_' . $component])) {
         switch ($component) {
             case 'Session':

@@ -69,7 +69,15 @@ class Com_Queue_Adapter_RedisQ implements Com_Queue_Adapter_Interface
      */
     public function pop()
     {
-        return $this->_redis->lpop($this->_listName);
+        // 如果取不到则永久阻塞在那里（0表示永不超时）
+        // 直到别的客户端 RPUSH 了才停止阻塞并取出往下执行
+        $value = $this->_redis->blpop($this->_listName, 0);
+
+        if ($value && isset($value[1])) {
+            return $value[1];
+        }
+
+        return null;
     }
 
     /**

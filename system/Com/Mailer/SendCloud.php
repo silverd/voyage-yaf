@@ -9,10 +9,7 @@
 
 class Com_Mailer_SendCloud
 {
-    const
-        API_USER = 'morecruit',
-        API_KEY  = 'Du5zW3h7XYV1S8fa',
-        API_URL  = 'http://sendcloud.sohu.com/webapi/mail.send.json';
+    const API_URL = 'http://sendcloud.sohu.com/webapi/mail.send.json';
 
     /*
         参数格式示例：
@@ -27,8 +24,8 @@ class Com_Mailer_SendCloud
     */
     public static function send(array $params)
     {
-        $params['api_user'] = self::API_USER;
-        $params['api_key']  = self::API_KEY;
+        $params['api_user'] = SEND_CLOUD_API_USER;
+        $params['api_key']  = SEND_CLOUD_API_KEY;
 
         $ch = curl_init();
 
